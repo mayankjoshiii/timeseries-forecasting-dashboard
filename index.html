@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time-Series Forecasting Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1a1f3a 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px 0;
+            border-bottom: 2px solid rgba(139, 92, 246, 0.3);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            letter-spacing: 1px;
+            color: #e2e8f0;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 0.95rem;
+            color: #94a3b8;
+            letter-spacing: 0.5px;
+        }
+
+        /* Controls Section */
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #cbd5e1;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        select, input {
+            padding: 10px 15px;
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 6px;
+            color: #e2e8f0;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        select:hover, input:hover {
+            border-color: rgba(139, 92, 246, 0.6);
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.1);
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
+        }
+
+        input[type="range"] {
+            padding: 0;
+            height: 5px;
+        }
+
+        .slider-value {
+            font-size: 0.8rem;
+            color: #06b6d4;
+            font-weight: 600;
+        }
+
+        /* KPI Cards */
+        .kpi-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .kpi-card {
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .kpi-card:hover {
+            border-color: rgba(139, 92, 246, 0.5);
+            box-shadow: 0 8px 20px rgba(139, 92, 246, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .kpi-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #94a3b8;
+            margin-bottom: 8px;
+        }
+
+        .kpi-value {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #06b6d4;
+            margin-bottom: 8px;
+        }
+
+        .kpi-secondary {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .kpi-stat {
+            font-size: 0.75rem;
+            color: #cbd5e1;
+        }
+
+        .kpi-stat-value {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #8b5cf6;
+        }
+
+        .trending-up {
+            color: #10b981;
+        }
+
+        .trending-down {
+            color: #ef4444;
+        }
+
+        /* Charts Container */
+        .charts {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 12px;
+            padding: 25px;
+            overflow: hidden;
+        }
+
+        .chart-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #e2e8f0;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chart-subtitle {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-left: 10px;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 8px;
+        }
+
+        .toggle-btn {
+            padding: 6px 12px;
+            background: rgba(139, 92, 246, 0.2);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 5px;
+            color: #cbd5e1;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-btn.active {
+            background: #8b5cf6;
+            border-color: #8b5cf6;
+            color: white;
+        }
+
+        .toggle-btn:hover {
+            border-color: #8b5cf6;
+        }
+
+        /* Tabs */
+        .chart-tabs {
+            display: flex;
+            gap: 15px;
+            border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 10px 0;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: #94a3b8;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .tab:hover {
+            color: #cbd5e1;
+        }
+
+        .tab.active {
+            color: #8b5cf6;
+            border-bottom-color: #8b5cf6;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .method-card {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .method-name {
+            font-weight: 600;
+            color: #06b6d4;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 0.85rem;
+            border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+        }
+
+        .metric-label {
+            color: #94a3b8;
+        }
+
+        .metric-value {
+            color: #8b5cf6;
+            font-weight: 600;
+        }
+
+        /* Decomposition Grid */
+        .decomposition-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        .decomposition-item {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .decomposition-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #cbd5e1;
+            margin-bottom: 12px;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            border-top: 1px solid rgba(139, 92, 246, 0.2);
+            margin-top: 40px;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        footer a {
+            color: #8b5cf6;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        footer a:hover {
+            color: #06b6d4;
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #8b5cf6;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .controls {
+                grid-template-columns: 1fr;
+            }
+
+            .kpi-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .toggle-btn {
+                padding: 4px 8px;
+                font-size: 0.7rem;
+            }
+
+            body {
+                padding: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .kpi-container {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.4rem;
+            }
+        }
+
+        .plotly-chart {
+            min-height: 400px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Time-Series Forecasting Dashboard</h1>
+            <p class="subtitle">Interactive Analysis & Predictive Modeling</p>
+        </header>
+
+        <!-- Controls -->
+        <div class="controls">
+            <div class="control-group">
+                <label for="datasetSelect">Dataset</label>
+                <select id="datasetSelect" onchange="switchDataset()">
+                    <option value="ecommerce">E-Commerce Revenue</option>
+                    <option value="energy">Energy Consumption</option>
+                    <option value="foottraffic">Retail Foot Traffic</option>
+                    <option value="saas">SaaS MRR Growth</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="forecastHorizon">Forecast Horizon: <span class="slider-value" id="horizonValue">30</span> days</label>
+                <input type="range" id="forecastHorizon" min="7" max="90" value="30" onchange="updateDashboard()">
+            </div>
+
+            <div class="control-group">
+                <label for="confidenceLevel">Confidence Level: <span class="slider-value" id="confidenceValue">95</span>%</label>
+                <input type="range" id="confidenceLevel" min="70" max="99" value="95" onchange="updateDashboard()">
+            </div>
+
+            <div class="control-group">
+                <label for="smoothingFactor">Smoothing Factor: <span class="slider-value" id="smoothingValue">0.30</span></label>
+                <input type="range" id="smoothingFactor" min="0.1" max="0.9" step="0.05" value="0.3" onchange="updateDashboard()">
+            </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="kpi-container" id="kpiContainer"></div>
+
+        <!-- Charts -->
+        <div class="charts">
+            <!-- Main Time Series Chart -->
+            <div class="chart-card">
+                <div class="chart-title">
+                    Time Series Forecast
+                    <div class="view-toggle">
+                        <button class="toggle-btn active" onclick="changeTimeframe('daily')">Daily</button>
+                        <button class="toggle-btn" onclick="changeTimeframe('weekly')">Weekly</button>
+                        <button class="toggle-btn" onclick="changeTimeframe('monthly')">Monthly</button>
+                    </div>
+                </div>
+                <div id="mainChart" class="plotly-chart"></div>
+            </div>
+
+            <!-- Decomposition View -->
+            <div class="chart-card">
+                <div class="chart-title">Seasonal Decomposition</div>
+                <div class="decomposition-grid">
+                    <div class="decomposition-item">
+                        <div class="decomposition-label">Original Series</div>
+                        <div id="decompositionOriginal" class="plotly-chart"></div>
+                    </div>
+                    <div class="decomposition-item">
+                        <div class="decomposition-label">Trend Component</div>
+                        <div id="decompositionTrend" class="plotly-chart"></div>
+                    </div>
+                    <div class="decomposition-item">
+                        <div class="decomposition-label">Seasonal Component</div>
+                        <div id="decompositionSeasonal" class="plotly-chart"></div>
+                    </div>
+                    <div class="decomposition-item">
+                        <div class="decomposition-label">Residual Component</div>
+                        <div id="decompositionResidual" class="plotly-chart"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seasonality Heatmap -->
+            <div class="chart-card">
+                <div class="chart-title">Seasonality Patterns</div>
+                <div id="heatmapChart" class="plotly-chart"></div>
+            </div>
+
+            <!-- Forecast Comparison -->
+            <div class="chart-card">
+                <div class="chart-title">Forecasting Methods Comparison</div>
+                <div class="chart-tabs">
+                    <div class="tab active" onclick="switchComparisonTab('visual')">Visual Comparison</div>
+                    <div class="tab" onclick="switchComparisonTab('metrics')">Accuracy Metrics</div>
+                </div>
+                <div id="comparisonVisual" class="tab-content active">
+                    <div id="comparisonChart" class="plotly-chart"></div>
+                </div>
+                <div id="comparisonMetrics" class="tab-content">
+                    <div id="metricsGrid" class="comparison-grid"></div>
+                </div>
+            </div>
+
+            <!-- Anomaly Detection -->
+            <div class="chart-card">
+                <div class="chart-title">Anomaly Detection</div>
+                <div id="anomalyChart" class="plotly-chart"></div>
+            </div>
+
+            <!-- Residual Analysis -->
+            <div class="chart-card">
+                <div class="chart-title">Residual Analysis</div>
+                <div class="chart-tabs">
+                    <div class="tab active" onclick="switchResidualTab('plot')">Residual Plot</div>
+                    <div class="tab" onclick="switchResidualTab('histogram')">Distribution</div>
+                    <div class="tab" onclick="switchResidualTab('acf')">Auto-Correlation</div>
+                </div>
+                <div id="residualPlot" class="tab-content active">
+                    <div id="residualChart" class="plotly-chart"></div>
+                </div>
+                <div id="residualHistogram" class="tab-content">
+                    <div id="histogramChart" class="plotly-chart"></div>
+                </div>
+                <div id="residualACF" class="tab-content">
+                    <div id="acfChart" class="plotly-chart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Built by <strong>Mayank Joshi</strong> | MSc Business Analytics, Swansea University</p>
+        <p><a href="https://github.com/mayankjoshiii">View on GitHub</a> | MIT License</p>
+    </footer>
+
+    <script>
+        // ==================== DATA GENERATION ====================
+        class SeededRandom {
+            constructor(seed) {
+                this.seed = seed;
+            }
+
+            next() {
+                this.seed = (this.seed * 9301 + 49297) % 233280;
+                return this.seed / 233280;
+            }
+        }
+
+        function generateDataset(name, days = 730) {
+            const rng = new SeededRandom(12345 + Object.keys(datasets).length);
+            const data = [];
+            let baseValue;
+            let trendRate;
+            let seasonalityWeek = [];
+            let seasonalityYear = [];
+
+            switch (name) {
+                case 'ecommerce':
+                    baseValue = 50000;
+                    trendRate = 1.0008;
+                    seasonalityWeek = [1.0, 0.95, 0.90, 0.88, 1.05, 1.25, 1.15];
+                    seasonalityYear = [0.85, 0.88, 1.0, 1.1, 1.15, 1.2, 1.3, 1.28, 1.1, 1.0, 1.05, 1.35];
+                    break;
+                case 'energy':
+                    baseValue = 100;
+                    trendRate = 1.00015;
+                    seasonalityWeek = [1.15, 1.12, 1.1, 1.08, 1.05, 0.92, 0.88];
+                    seasonalityYear = [1.3, 1.28, 1.15, 1.05, 0.85, 0.75, 0.72, 0.75, 0.88, 1.05, 1.2, 1.32];
+                    break;
+                case 'foottraffic':
+                    baseValue = 5000;
+                    trendRate = 1.0006;
+                    seasonalityWeek = [0.8, 0.85, 0.9, 0.95, 1.05, 1.25, 1.15];
+                    seasonalityYear = [0.95, 0.95, 1.0, 1.05, 1.1, 1.15, 1.2, 1.15, 1.05, 1.0, 0.95, 1.3];
+                    break;
+                case 'saas':
+                    baseValue = 100000;
+                    trendRate = 1.0012;
+                    seasonalityWeek = [0.98, 0.98, 1.0, 1.0, 1.02, 1.01, 0.99];
+                    seasonalityYear = [0.95, 0.95, 1.0, 1.05, 1.08, 1.1, 1.08, 1.05, 1.0, 1.02, 1.05, 1.15];
+                    break;
+            }
+
+            for (let i = 0; i < days; i++) {
+                const date = new Date(2022, 0, 1);
+                date.setDate(date.getDate() + i);
+
+                const trend = baseValue * Math.pow(trendRate, i);
+                const weekFactor = seasonalityWeek[date.getDay()];
+                const monthIndex = date.getMonth();
+                const yearFactor = seasonalityYear[monthIndex];
+
+                const noise = (rng.next() - 0.5) * 0.1 * trend;
+                let value = trend * weekFactor * yearFactor + noise;
+
+                // Add anomalies
+                if (i === 180 || i === 450 || i === 650) {
+                    value *= (1 + (rng.next() - 0.5) * 0.5);
+                }
+
+                data.push({
+                    date: date.toISOString().split('T')[0],
+                    value: Math.max(0, value),
+                    timestamp: date.getTime()
+                });
+            }
+
+            return data;
+        }
+
+        const datasets = {
+            ecommerce: {
+                name: 'E-Commerce Revenue',
+                unit: '$',
+                data: generateDataset('ecommerce')
+            },
+            energy: {
+                name: 'Energy Consumption',
+                unit: 'MWh',
+                data: generateDataset('energy')
+            },
+            foottraffic: {
+                name: 'Retail Foot Traffic',
+                unit: 'visitors',
+                data: generateDataset('foottraffic')
+            },
+            saas: {
+                name: 'SaaS MRR Growth',
+                unit: '$',
+                data: generateDataset('saas')
+            }
+        };
+
+        let currentDataset = 'ecommerce';
+        let currentTimeframe = 'daily';
+
+        // ==================== STATISTICAL METHODS ====================
+        function movingAverage(data, window) {
+            return data.map((_, i) => {
+                const start = Math.max(0, i - window + 1);
+                const subset = data.slice(start, i + 1);
+                return subset.reduce((a, b) => a + b, 0) / subset.length;
+            });
+        }
+
+        function exponentialSmoothing(data, alpha) {
+            const result = [data[0]];
+            for (let i = 1; i < data.length; i++) {
+                result.push(alpha * data[i] + (1 - alpha) * result[i - 1]);
+            }
+            return result;
+        }
+
+        function holtWinters(data, alpha, beta, seasonalPeriod) {
+            const result = [];
+            let level = data[0];
+            let trend = (data[seasonalPeriod] - data[0]) / seasonalPeriod;
+            const seasonals = [];
+
+            for (let i = 0; i < seasonalPeriod; i++) {
+                seasonals.push(data[i] - level);
+            }
+
+            for (let i = 0; i < data.length; i++) {
+                const seasonalComponent = seasonals[i % seasonalPeriod];
+                const prevLevel = level;
+                level = alpha * (data[i] - seasonalComponent) + (1 - alpha) * (level + trend);
+                trend = beta * (level - prevLevel) + (1 - beta) * trend;
+                seasonals[(i + 1) % seasonalPeriod] = (1 - alpha) * seasonalComponent + alpha * (data[i] - level);
+                result.push(level + trend + seasonalComponent);
+            }
+
+            return result;
+        }
+
+        function linearRegression(x, y) {
+            const n = x.length;
+            const sumX = x.reduce((a, b) => a + b, 0);
+            const sumY = y.reduce((a, b) => a + b, 0);
+            const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
+            const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
+
+            const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            const intercept = (sumY - slope * sumX) / n;
+
+            return { slope, intercept };
+        }
+
+        function seasonalDecomposition(data, seasonalPeriod = 30) {
+            const trend = movingAverage(data, seasonalPeriod);
+            const detrended = data.map((d, i) => d - trend[i]);
+            const seasonal = [];
+
+            for (let i = 0; i < seasonalPeriod; i++) {
+                let sum = 0;
+                let count = 0;
+                for (let j = i; j < detrended.length; j += seasonalPeriod) {
+                    sum += detrended[j];
+                    count++;
+                }
+                seasonal.push(sum / count);
+            }
+
+            const residual = data.map((d, i) => d - trend[i] - seasonal[i % seasonalPeriod]);
+
+            return { trend, seasonal, residual };
+        }
+
+        function detectAnomalies(data, windowSize = 30, threshold = 3) {
+            const anomalies = [];
+            for (let i = windowSize; i < data.length; i++) {
+                const window = data.slice(i - windowSize, i);
+                const mean = window.reduce((a, b) => a + b, 0) / window.length;
+                const std = Math.sqrt(window.reduce((sum, x) => sum + Math.pow(x - mean, 2), 0) / window.length);
+                const zScore = Math.abs((data[i] - mean) / std);
+                if (zScore > threshold) {
+                    anomalies.push({ index: i, zscore: zScore });
+                }
+            }
+            return anomalies;
+        }
+
+        function calculateMetrics(actual, predicted) {
+            const n = actual.length;
+            const errors = actual.map((a, i) => a - predicted[i]);
+            const absErrors = errors.map(e => Math.abs(e));
+
+            const mae = absErrors.reduce((a, b) => a + b, 0) / n;
+            const rmse = Math.sqrt(errors.reduce((sum, e) => sum + e * e, 0) / n);
+            const mape = (absErrors.reduce((sum, ae, i) => sum + ae / actual[i], 0) / n) * 100;
+
+            const meanActual = actual.reduce((a, b) => a + b, 0) / n;
+            const ssTotal = actual.reduce((sum, a) => sum + Math.pow(a - meanActual, 2), 0);
+            const ssRes = errors.reduce((sum, e) => sum + Math.pow(e, 2), 0);
+            const r2 = 1 - (ssRes / ssTotal);
+
+            return { mae: mae.toFixed(2), rmse: rmse.toFixed(2), mape: mape.toFixed(2), r2: r2.toFixed(3) };
+        }
+
+        function aggregateData(data, granularity) {
+            if (granularity === 'daily') return data;
+
+            const aggregated = {};
+            const dateFormat = granularity === 'weekly'
+                ? d => {
+                    const date = new Date(d.date);
+                    const weekStart = new Date(date);
+                    weekStart.setDate(date.getDate() - date.getDay());
+                    return weekStart.toISOString().split('T')[0];
+                  }
+                : d => d.date.substring(0, 7);
+
+            data.forEach(item => {
+                const key = dateFormat(item);
+                if (!aggregated[key]) {
+                    aggregated[key] = [];
+                }
+                aggregated[key].push(item.value);
+            });
+
+            return Object.entries(aggregated).map(([date, values]) => ({
+                date,
+                value: values.reduce((a, b) => a + b) / values.length,
+                timestamp: new Date(date).getTime()
+            }));
+        }
+
+        // ==================== FORECAST GENERATION ====================
+        function generateForecast(historicalData, horizon, confidenceLevel) {
+            const values = historicalData.map(d => d.value);
+            const n = values.length;
+            const indices = Array.from({length: n}, (_, i) => i);
+
+            // Multiple forecasting methods
+            const ma7 = movingAverage(values, 7);
+            const es = exponentialSmoothing(values, parseFloat(document.getElementById('smoothingFactor').value));
+            const hw = holtWinters(values, 0.3, 0.1, 30);
+
+            const lastIndex = n - 1;
+            const reg = linearRegression(indices, values);
+
+            const forecastData = [];
+            const lastDate = new Date(historicalData[lastDate] ? historicalData[lastDate].date : historicalData[n - 1].date);
+
+            for (let i = 1; i <= horizon; i++) {
+                const forecastDate = new Date(lastDate);
+                forecastDate.setDate(forecastDate.getDate() + i);
+
+                const maForecast = ma7[n - 1];
+                const esForecast = es[n - 1];
+                const hwForecast = hw[n - 1];
+                const linForecast = reg.slope * (n + i - 1) + reg.intercept;
+
+                const avgForecast = (maForecast + esForecast + hwForecast + linForecast) / 4;
+
+                // Confidence intervals based on historical residuals
+                const residuals = values.map((v, idx) => v - es[idx]);
+                const residualStd = Math.sqrt(residuals.reduce((sum, r) => sum + r * r, 0) / residuals.length);
+                const zScore = confidenceLevel === 95 ? 1.96 : confidenceLevel === 80 ? 1.28 : 2.576;
+                const margin = zScore * residualStd * Math.sqrt(1 + i / n);
+
+                forecastData.push({
+                    date: forecastDate.toISOString().split('T')[0],
+                    forecast: avgForecast,
+                    upper95: avgForecast + margin * 1.96 / 1.28,
+                    lower95: avgForecast - margin * 1.96 / 1.28,
+                    upper80: avgForecast + margin,
+                    lower80: avgForecast - margin,
+                    ma: maForecast,
+                    es: esForecast,
+                    hw: hwForecast,
+                    lin: linForecast
+                });
+            }
+
+            return forecastData;
+        }
+
+        // ==================== UI UPDATES ====================
+        function updateKPICards() {
+            const dataset = datasets[currentDataset];
+            const data = aggregateData(dataset.data, currentTimeframe);
+            const values = data.map(d => d.value);
+
+            const current = values[values.length - 1];
+            const previous = values[0];
+            const growth = ((current - previous) / previous) * 100;
+
+            const trend = current > values[values.length - 7] ? '↑' : '↓';
+            const trendClass = current > values[values.length - 7] ? 'trending-up' : 'trending-down';
+
+            const horizon = parseInt(document.getElementById('forecastHorizon').value);
+            const forecast = generateForecast(data, horizon, parseInt(document.getElementById('confidenceLevel').value));
+            const nextForecast = forecast[0].forecast;
+
+            const ma7 = movingAverage(values, 7);
+            const es = exponentialSmoothing(values, 0.3);
+            const metrics = calculateMetrics(values.slice(7), ma7.slice(7));
+
+            const kpiHtml = `
+                <div class="kpi-card">
+                    <div class="kpi-label">Current Value</div>
+                    <div class="kpi-value">${dataset.unit}${current.toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
+                    <div class="kpi-secondary">
+                        <div class="kpi-stat">Period Growth<br><span class="kpi-stat-value ${trendClass}">${growth > 0 ? '+' : ''}${growth.toFixed(2)}%</span></div>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">YoY Trend</div>
+                    <div class="kpi-value ${trendClass}">${trend}</div>
+                    <div class="kpi-secondary">
+                        <div class="kpi-stat">Signal<br><span class="kpi-stat-value">${current > values[Math.max(0, values.length - 365)] ? 'Up' : 'Down'}</span></div>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Forecast Accuracy</div>
+                    <div class="kpi-value">${(100 - parseFloat(metrics.mape)).toFixed(1)}%</div>
+                    <div class="kpi-secondary">
+                        <div class="kpi-stat">MAPE<br><span class="kpi-stat-value">${metrics.mape}%</span></div>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Next Period Forecast</div>
+                    <div class="kpi-value">${dataset.unit}${nextForecast.toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
+                    <div class="kpi-secondary">
+                        <div class="kpi-stat">+${horizon} Days<br><span class="kpi-stat-value">${((nextForecast / current - 1) * 100).toFixed(2)}%</span></div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('kpiContainer').innerHTML = kpiHtml;
+        }
+
+        function updateMainChart() {
+            const dataset = datasets[currentDataset];
+            const data = aggregateData(dataset.data, currentTimeframe);
+            const values = data.map(d => d.value);
+            const dates = data.map(d => d.date);
+
+            const horizon = parseInt(document.getElementById('forecastHorizon').value);
+            const confidenceLevel = parseInt(document.getElementById('confidenceLevel').value);
+            const forecast = generateForecast(data, horizon, confidenceLevel);
+
+            const forecastDates = forecast.map(f => f.date);
+            const forecastValues = forecast.map(f => f.forecast);
+            const upper95 = forecast.map(f => f.upper95);
+            const lower95 = forecast.map(f => f.lower95);
+            const upper80 = forecast.map(f => f.upper80);
+            const lower80 = forecast.map(f => f.lower80);
+
+            const allDates = [...dates, ...forecastDates];
+            const fillColor95 = 'rgba(139, 92, 246, 0.15)';
+            const fillColor80 = 'rgba(139, 92, 246, 0.25)';
+
+            const traces = [
+                {
+                    x: dates,
+                    y: values,
+                    name: 'Actual',
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: { color: '#06b6d4', width: 2 },
+                    hovertemplate: `<b>Actual</b><br>Date: %{x}<br>Value: ${dataset.unit}%{y:,.0f}<extra></extra>`
+                },
+                {
+                    x: forecastDates,
+                    y: forecastValues,
+                    name: 'Forecast',
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: { color: '#8b5cf6', width: 2, dash: 'dash' },
+                    hovertemplate: `<b>Forecast</b><br>Date: %{x}<br>Value: ${dataset.unit}%{y:,.0f}<extra></extra>`
+                },
+                {
+                    x: [...forecastDates, ...forecastDates.slice().reverse()],
+                    y: [...upper95, ...lower95.slice().reverse()],
+                    fill: 'toself',
+                    fillcolor: fillColor95,
+                    line: { color: 'rgba(139, 92, 246, 0)' },
+                    showlegend: true,
+                    name: '95% Confidence',
+                    hoverinfo: 'skip'
+                },
+                {
+                    x: [...forecastDates, ...forecastDates.slice().reverse()],
+                    y: [...upper80, ...lower80.slice().reverse()],
+                    fill: 'toself',
+                    fillcolor: fillColor80,
+                    line: { color: 'rgba(139, 92, 246, 0)' },
+                    showlegend: true,
+                    name: '80% Confidence',
+                    hoverinfo: 'skip'
+                }
+            ];
+
+            const layout = {
+                title: '',
+                hovermode: 'x unified',
+                template: 'plotly_dark',
+                plot_bgcolor: 'rgba(15, 23, 42, 0.5)',
+                paper_bgcolor: 'transparent',
+                font: { color: '#cbd5e1', family: 'Segoe UI, sans-serif' },
+                xaxis: { showgrid: true, gridcolor: 'rgba(139, 92, 246, 0.1)' },
+                yaxis: { showgrid: true, gridcolor: 'rgba(139, 92, 246, 0.1)' },
+                margin: { l: 50, r: 50, t: 30, b: 50 },
+                legend: { x: 0.01, y: 0.99 }
+            };
+
+            Plotly.newPlot('mainChart', traces, layout, { responsive: true, displayModeBar: false });
+        }
+
+        function updateDecomposition() {
+            const dataset = datasets[currentDataset];
+            const data = aggregateData(dataset.data, currentTimeframe);
+            const values = data.map(d => d.value);
+            const dates = data.map(d => d.date);
+
+            const { trend, seasonal, residual } = seasonalDecomposition(values, 30);
+
+            const layoutConfig = {
+                hovermode: 'x',
+                template: 'plotly_dark',
+                plot_bgcolor: 'rgba(15, 23, 42, 0.5)',
+                paper_bgcolor: 'transparent',
+                font: { color: '#cbd5e1' },
+                xaxis: { showgrid: true, gridcolor: 'rgba(139, 92, 246, 0.1)' },
+                yaxis: { showgrid: true, gridcolor: 'rgba(139, 92, 246, 0.1)' },
+                margin: { l: 50, r: 30, t: 20, b: 40 }
+            };
+
+            Plotly.newPlot('decompositionOriginal', [{
+                x: dates,
+                y: values,
+                type: 'scatter',
+                mode: 'lines',
+                line: { color: '#06b6d4' },
+                hovertemplate: `${dataset.unit}%{y:,.0f}<extra></extra>`
+            }], layoutConfig, { responsive: true, displayModeBar: false });
+
+            Plotly.newPlot('decompositionTrend', [{
+                x: dates,
+                y: trend,
+                type: 'scatter',
+                mode: 'lines',
+                line: { color: '#8b5cf6' },
+                hovertemplate: `${dataset.unit}%{y:,.0f}<extra></extra>`
+            }], layoutConfig, { responsive: true, displayModeBar: false });
+
+            Plotly.newPlot('decompositionSeasonal', [{
+                x: dates,
+                y: seasonal.map((_, i) => seasonal[i % seasonal.length]),
+                type: 'scatter',
+                mode: 'lines',
+                line: { color: '#10b981' },
+                hovertemplate: `${dataset.unit}%{y:,.2f}<extra></extra>`
+            }], layoutConfig, { responsive: true, displayModeBar: false });
+
+            Plotly.newPlot('decompositionResidual', [{
+                x: dates,
+                y: residual,
+                type: 'scatter',
+                mode: 'markers',
+                marker: { color: '#f59e0b', size: 4 },
+                hovertemplate: `${dataset.unit}%{y:,.0f}<extra></extra>`
+            }], layoutConfig, { responsive: true, displayModeBar: false });
+        }
+
+        function updateSeasonalityHeatmap() {
+            const dataset = datasets[currentDataset];
+            const rawData = dataset.data;
+
+            const heatmapData = Array(12).fill(null).map(() => Array(31).fill(0));
+            const heatmapCount = Array(12).fill(null).map(() => Array(31).fill(0));
+
+            rawData.forEach(d => {
+                const date = new Date(d.date);
+                const month = date.getMonth();
+                const dayOfMonth = date.getDate() - 1;
+                heatmapData[month][dayOfMonth] += d.value;
+                heatmapCount[month][dayOfMonth]++;
+            });
+
+            const heatmapNormalized = heatmapData.map((month, m) =>
+                month.map((val, d) => heatmapCount[m][d] > 0 ? val / heatmapCount[m][d] : null)
+            );
+
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const days = Array.from({length: 31}, (_, i) => i + 1);
+
+            Plotly.newPlot('heatmapChart', [{
+                z: heatmapNormalized,
+                x: days,
+                y: months,
+                type: 'heatmap',
+                colorscale: 'Viridis',
+                hovertemplate: 'Month: %{y}<br>Day: %{x}<br>Avg Value: %{z:,.0f}<extra></extra>'
+            }], {
+                title: '',
+                hovermode: 'closest',
+                template: 'plotly_dark',
+                plot_bgcolor: 'rgba(15, 23, 42, 0.5)',
+                paper_bgcolor: 'transparent',
+                font: { color: '#cbd5e1' },
+                margin: { l: 60, r: 30, t: 30, b: 50 }
+            }, { responsive: true, displayModeBar: false });
+        }
+
+        function updateComparisonChart() {
+            const dataset = datasets[currentDataset];
+            const data = aggregateData(dataset.data, currentTimeframe);
+            const values = data.map(d => d.value);
+            const dates = data.map(d => d.date);
+
+            const ma7 = movingAverage(values, 7);
+            const es = exponentialSmoothing(values, parseFloat(document.getElementById('smoothingFactor').value));
+            const hw = holtWinters(values, 0.3, 0.1, 30);
+
+            const indices = Array.from({length: values.length}, (_, i) => i);
+            const reg = linearRegression(indices, values);
+            const lin = indices.map(i => reg.slope * i + reg.intercept);
+
+            const traces = [
+                { x: dates, y: values, name: 'Actual', line: { color: '#06b6d4', width: 2 } },
+                { x: dates, y: ma7, name: 'Moving Avg (7)', line: { color: '#f59e0b', width: 1.5, dash: 'dot' } },
+                { x: dates, y: es, name: 'Exp. Smoothing', line: { color: '#8b5cf6', width: 1.5, dash: 'dot' } },
+                { x: dates, y: hw, name: 'Holt-Winters', line: { color: '#10b981', width: 1.5, dash: 'dot' } },
+                { x: dates, y: lin, name: 'Linear Trend', line: { color: '#ef4444', width: 1.5, dash: 'dot' } }
+            ];
+
+            traces.forEach(t => {
+                t.type = 'scatter';
+                t.mode = 'lines';
+                t.hovertemplate = `<b>${t.name}</b><br>%{x}<br>${dataset.unit}%{y:,.0f}<extra></extra>`;
+            });
+
+            Plotly.newPlot('comparisonChart', traces, {
+                hovermode: 'x unified',
+                template: 'plotly_dark',
+                plot_bgcolor: 'rgba(15, 23, 42, 0.5)',
+                paper_bgcolor: 'transparent',
+                font: { color: '#cbd5e1' },
+                xaxis: { showgrid: true, gridcolor: 'rgba(139, 92, 246, 0.1)' },
+                yaxis: { showgrid: true, gridcolor: 'rgba(139, 92, 246, 0.1)' },
+                margin: { l: 50, r: 30, t: 20, b: 50 },
+                legend: { x: 0.01, y: 0.99 }
+            }, { responsive: true, displayModeBar: false });
+
+            // Update metrics
+            const maMetrics = calculateMetrics(values.slice(7), ma7.slice(7));
+            const esMetrics = calculateMetrics(values.slice(7), es.slice(7));
+            const hwMetrics = calculateMetrics(values.slice(7), hw.slice(7));
+            const linMetrics = calculateMetrics(values.slice(7), lin.slice(7));
+
+            const metricsHtml = `
+                <div class="method-card">
+                    <div class="method-name">Moving Average (7)</div>
+                    <div class="metric"><span class="metric-label">MAPE</span><span class="metric-value">${maMetrics.mape}%</span></div>
+                    <div class="metric"><span class="metric-label">RMSE</span><span class="metric-value">${maMetrics.rmse}</span></div>
+                    <div class="metric"><span class="metric-label">MAE</span><span class="metric-value">${maMetrics.mae}</span></div>
+                    <div class="metric"><span class="metric-label">R²</span><span class="metric-value">${maMetrics.r2}</span></div>
+                </div>
+                <div class="method-card">
+                    <div class="method-name">Exponential Smoothing</div>
+                    <div class="metric"><span class="metric-label">MAPE</span><span class="metric-value">${esMetrics.mape}%</span></div>
+                    <div class="metric"><span class="metric-label">RMSE</span><span class="metric-value">${esMetrics.rmse}</span></div>
+                    <div class="metric"><span class="metric-label">MAE</span><span class="metric-value">${esMetrics.mae}</span></div>
+                    <div class="metric"><span class="metric-label">R²</span><span class="metric-value">${esMetrics.r2}</span></div>
+                </div>
+                <div class="method-card">
+                    <div class="method-name">Holt-Winters</div>
+                    <div class="metric"><span class="metric-label">MAPE</span><span class="metric-value">${hwMetrics.mape}%</span></div>
+                    <div class="metric"><span class="metric-label">RMSE</span><span class="metric-value">${hwMetrics.rmse}</span></div>
+                    <div class="metric"><span class="metric-label">MAE</span><span class="metric-value">${hwMetrics.mae}</span></div>
+                    <div class="metric"><span class="metric-label">R²</span><span class="metric-value">${hwMetrics.r2}</span></div>
+                </div>
+                <div class="method-card">
+                    <div class="method-name">Linear Trend</div>
+                    <div class="metric"><span class="metric-label">MAPE</span><span class="metric-value">${linMetrics.mape}%</span></div>
+                    <div class="metric"><span class="metric-label">RMSE</span><span class="metric-value">${linMetrics.rmse}</span></div>
+                    <div class="metric"><span class="metric-label">MAE</span><span class="metric-value">${linMetrics.mae}</span></div>
+                    <div class="metric"><span class="metric-label">R²</span><span class="metric-value">${linMetrics.r2}</span></div>
+                </div>
+            `;
+
+            document.getElementById('metricsGrid').innerHTML = metricsHtml;
+        }
+
+        function updateAnomalyChart() {
+            const dataset = datasets[currentDataset];
+            const data = aggregateData(dataset.data, currentTimeframe);
+            const values = data.map(d => d.value);
+            const dates = data.map(d => d.date);
+
+            const anomalies = detectAnomalies(values, 30, 2.5);
+
+            const normalX = dates.filter((_, i) => !anomalies.find(a => a.index === i));
+            const normalY = values.filter((_, i) => !anomalies.find(a => a.index === i));
+            const anomalyX = anomalies.map(a => dates[a.index]);
+            const anomalyY = anomalies.map(a => values[a.index]);
+
+            Plotly.newPlot('anomalyChart', [
+                {
+                    x: normalX,
+                    y: normalY,
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    name: 'Normal',
+                    line: { color: '#06b6d4' },
+                    marker: { size: 4 },
+                    hovertemplate: `${dataset.unit}%{y:,.0f}<extra></extra>`
+                },
+                {
+                    x: anomalyX,
+                    y: anomalyY,
+                    type: 'scatter',
+                    mode: 'markers',
+                    name: 'Anomaly',
+                    marker: { color: '#ef4444', size: 10, symbol: 'diamond' },
+                    hovertemplate: `<b>ANOMALY</b><br>%{x}<br>${dataset.unit}%{y:,.0f}<extra></extra>`
+                }
+            ], {
+                hovermode: 'closest',
+                template: 'plotly_dark',
+                plot_bgcolor: 'rgba(15, 23, 42, 0.5)',
+                paper_bgcolor: 'transparent',
+                font: { color: '#cbd5e1' },
+                xaxis: { showgrid: true, gridcolor: 'rgba(139, 92, 246, 0.1)' },
+                yaxis: { showgrid: true, gridcolor: 'rgba(139, 92, 246, 0.1)' },
+                margin: { l: 50, r: 30, t: 20, b: 50 }
+            }, { responsive: true, displayModeBar: false });
+        }
+
+        function updateResidualAnalysis() {
+            const dataset = datasets[currentDataset];
+            const data = aggregateData(dataset.data, currentTimeframe);
+            const values = data.map(d => d.value);
+            const dates = data.map(d => d.date);
+
+            const es = exponentialSmoothing(values, parseFloat(document.getElementById('smoothingFactor').value));
+            const residuals = values.map((v, i) => v - es[i]);
+
+            // Residual Plot
+            Plotly.newPlot('residualChart', [{
+                x: dates,
+                y: residuals,
+                type: 'scatter',
+                mode: 'markers',
+                marker: { color: '#f59e0b', size: 5 },
+                hovertemplate: `%{x}<br>Residual: %{y:,.0f}<extra></extra>`
+            }], {
+                shapes: [{
+                    type: 'line',
+                    x0: dates[0],
+                    x1: dates[dates.length - 1],
+                    y0: 0,
+                    y1: 0,
+                    line: { color: '#8b5cf6', dash: 'dash', width: 1 }
+                }],
+                hovermode: 'closest',
+                template: 'plotly_dark',
+                plot_bgcolor: 'rgba(15, 23, 42, 0.5)',
+                paper_bgcolor: 'transparent',
+                font: { color: '#cbd5e1' },
+                xaxis: { showgrid: true, gridcolor: 'rgba(139, 92, 246, 0.1)' },
+                yaxis: { showgrid: true, gridcolor: 'rgba(139, 92, 246, 0.1)' },
+                margin: { l: 50, r: 30, t: 20, b: 50 }
+            }, { responsive: true, displayModeBar: false });
+
+            // Histogram
+            Plotly.newPlot('histogramChart', [{
+                x: residuals,
+                type: 'histogram',
+                nbinsx: 30,
+                marker: { color: '#8b5cf6' },
+                hovertemplate: 'Residuals: %{x:,.0f}<br>Frequency: %{y}<extra></extra>'
+            }], {
+                hovermode: 'closest',
+                template: 'plotly_dark',
+                plot_bgcolor: 'rgba(15, 23, 42, 0.5)',
+                paper_bgcolor: 'transparent',
+                font: { color: '#cbd5e1' },
+                xaxis: { showgrid: true, gridcolor: 'rgba(139, 92, 246, 0.1)', title: 'Residual Value' },
+                yaxis: { showgrid: true, gridcolor: 'rgba(139, 92, 246, 0.1)', title: 'Frequency' },
+                margin: { l: 50, r: 30, t: 20, b: 50 }
+            }, { responsive: true, displayModeBar: false });
+
+            // ACF-like correlation
+            const acfValues = [];
+            const maxLag = Math.min(50, Math.floor(residuals.length / 4));
+            const meanResidual = residuals.reduce((a, b) => a + b) / residuals.length;
+
+            for (let lag = 0; lag < maxLag; lag++) {
+                let numerator = 0;
+                let denominator = 0;
+                for (let i = lag; i < residuals.length; i++) {
+                    numerator += (residuals[i] - meanResidual) * (residuals[i - lag] - meanResidual);
+                    denominator += Math.pow(residuals[i] - meanResidual, 2);
+                }
+                acfValues.push(numerator / denominator);
+            }
+
+            const acfLags = Array.from({length: maxLag}, (_, i) => i);
+
+            Plotly.newPlot('acfChart', [{
+                x: acfLags,
+                y: acfValues,
+                type: 'bar',
+                marker: { color: '#10b981' },
+                hovertemplate: 'Lag: %{x}<br>ACF: %{y:,.3f}<extra></extra>'
+            }], {
+                shapes: [
+                    { type: 'line', x0: 0, x1: maxLag - 1, y0: 1.96 / Math.sqrt(residuals.length), y1: 1.96 / Math.sqrt(residuals.length), line: { color: '#ef4444', dash: 'dash', width: 1 } },
+                    { type: 'line', x0: 0, x1: maxLag - 1, y0: -1.96 / Math.sqrt(residuals.length), y1: -1.96 / Math.sqrt(residuals.length), line: { color: '#ef4444', dash: 'dash', width: 1 } }
+                ],
+                hovermode: 'closest',
+                template: 'plotly_dark',
+                plot_bgcolor: 'rgba(15, 23, 42, 0.5)',
+                paper_bgcolor: 'transparent',
+                font: { color: '#cbd5e1' },
+                xaxis: { showgrid: true, gridcolor: 'rgba(139, 92, 246, 0.1)', title: 'Lag' },
+                yaxis: { showgrid: true, gridcolor: 'rgba(139, 92, 246, 0.1)', title: 'Autocorrelation' },
+                margin: { l: 50, r: 30, t: 20, b: 50 }
+            }, { responsive: true, displayModeBar: false });
+        }
+
+        function updateDashboard() {
+            updateKPICards();
+            updateMainChart();
+            updateDecomposition();
+            updateSeasonalityHeatmap();
+            updateComparisonChart();
+            updateAnomalyChart();
+            updateResidualAnalysis();
+        }
+
+        function switchDataset() {
+            currentDataset = document.getElementById('datasetSelect').value;
+            updateDashboard();
+        }
+
+        function changeTimeframe(timeframe) {
+            currentTimeframe = timeframe;
+            document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            updateMainChart();
+            updateDecomposition();
+            updateComparisonChart();
+            updateAnomalyChart();
+            updateResidualAnalysis();
+        }
+
+        function switchComparisonTab(tab) {
+            document.querySelectorAll('#comparisonVisual, #comparisonMetrics').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.chart-tabs .tab').forEach(el => el.classList.remove('active'));
+            if (tab === 'visual') {
+                document.getElementById('comparisonVisual').classList.add('active');
+            } else {
+                document.getElementById('comparisonMetrics').classList.add('active');
+            }
+            event.target.classList.add('active');
+        }
+
+        function switchResidualTab(tab) {
+            document.querySelectorAll('#residualPlot, #residualHistogram, #residualACF').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('#residualChart, #histogramChart, #acfChart').forEach(el => el.classList.remove('active'));
+            const tabs = document.querySelectorAll('#residualChart, #histogramChart, #acfChart').length > 0
+                ? document.querySelectorAll('.chart-tabs')[document.querySelectorAll('.chart-tabs').length - 1].querySelectorAll('.tab')
+                : [];
+
+            tabs.forEach(el => el.classList.remove('active'));
+
+            if (tab === 'plot') {
+                document.getElementById('residualPlot').classList.add('active');
+            } else if (tab === 'histogram') {
+                document.getElementById('residualHistogram').classList.add('active');
+            } else {
+                document.getElementById('residualACF').classList.add('active');
+            }
+            event.target.classList.add('active');
+        }
+
+        // Update slider display values
+        document.getElementById('forecastHorizon').addEventListener('input', (e) => {
+            document.getElementById('horizonValue').textContent = e.target.value;
+        });
+
+        document.getElementById('confidenceLevel').addEventListener('input', (e) => {
+            document.getElementById('confidenceValue').textContent = e.target.value;
+        });
+
+        document.getElementById('smoothingFactor').addEventListener('input', (e) => {
+            document.getElementById('smoothingValue').textContent = parseFloat(e.target.value).toFixed(2);
+        });
+
+        // Initialize dashboard
+        updateDashboard();
+    </script>
+</body>
+</html>
