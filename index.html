@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Time-Series Forecasting Dashboard</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-1.58.5.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -414,6 +414,8 @@
     </style>
 </head>
 <body>
+<div style="background:#ffb020;color:#111;font:600 13px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;text-align:center;padding:7px 14px;position:relative;z-index:9999">Demo on simulated data: all figures are generated in the browser and are illustrative, not real results.</div>
+
     <div class="container">
         <header>
             <h1>Time-Series Forecasting Dashboard</h1>
@@ -556,7 +558,8 @@
         }
 
         function generateDataset(name, days = 730) {
-            const rng = new SeededRandom(12345 + Object.keys(datasets).length);
+            const DATASET_ORDER = ['ecommerce', 'energy', 'foottraffic', 'saas'];
+            const rng = new SeededRandom(12345 + Math.max(0, DATASET_ORDER.indexOf(name)));
             const data = [];
             let baseValue;
             let trendRate;
@@ -789,7 +792,7 @@
             const reg = linearRegression(indices, values);
 
             const forecastData = [];
-            const lastDate = new Date(historicalData[lastDate] ? historicalData[lastDate].date : historicalData[n - 1].date);
+            const lastDate = new Date(historicalData[n - 1].date);
 
             for (let i = 1; i <= horizon; i++) {
                 const forecastDate = new Date(lastDate);
@@ -805,16 +808,16 @@
                 // Confidence intervals based on historical residuals
                 const residuals = values.map((v, idx) => v - es[idx]);
                 const residualStd = Math.sqrt(residuals.reduce((sum, r) => sum + r * r, 0) / residuals.length);
-                const zScore = confidenceLevel === 95 ? 1.96 : confidenceLevel === 80 ? 1.28 : 2.576;
-                const margin = zScore * residualStd * Math.sqrt(1 + i / n);
+                // Forecast standard error grows with the horizon; bands use the normal z-values for 80% and 95%
+                const sigma = residualStd * Math.sqrt(1 + i / n);
 
                 forecastData.push({
                     date: forecastDate.toISOString().split('T')[0],
                     forecast: avgForecast,
-                    upper95: avgForecast + margin * 1.96 / 1.28,
-                    lower95: avgForecast - margin * 1.96 / 1.28,
-                    upper80: avgForecast + margin,
-                    lower80: avgForecast - margin,
+                    upper95: avgForecast + 1.96 * sigma,
+                    lower95: avgForecast - 1.96 * sigma,
+                    upper80: avgForecast + 1.28 * sigma,
+                    lower80: avgForecast - 1.28 * sigma,
                     ma: maForecast,
                     es: esForecast,
                     hw: hwForecast,

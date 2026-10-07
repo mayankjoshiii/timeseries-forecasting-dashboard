@@ -1,6 +1,8 @@
 # Time-Series Forecasting Dashboard
 
-A comprehensive, production-quality interactive dashboard for time-series analysis, forecasting, and anomaly detection. Built as a single-file HTML application with embedded CSS and JavaScript, utilizing Plotly.js for advanced visualizations.
+> **Demo on simulated data.** Every number on this dashboard is generated in the browser by a random number generator, so the figures are illustrative. They are not results from real company data or a trained production model. The project shows how the analysis and the interactive visuals work, built as a single HTML file with Plotly.js.
+
+An interactive dashboard for time-series analysis, forecasting, and anomaly detection. Built as a single-file HTML application with embedded CSS and JavaScript, utilizing Plotly.js for advanced visualizations.
 
 **Live Demo & Portfolio**: [GitHub Repository](https://github.com/mayankjoshiii/timeseries-forecasting-dashboard)
 
@@ -449,4 +451,4 @@ For questions, suggestions, or bug reports:
 
 **Last Updated**: March 26, 2026
 **Version**: 1.0.0
-**Status**: Production Ready
+**Status**: Portfolio demo on simulated data
